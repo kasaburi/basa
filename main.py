@@ -1,33 +1,39 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
 
 from database import Base, engine, SessionLocal
-import models  # აუცილებელია tables რომ შეიქმნას
+import models
 
 from routers.routers.cities import router as cities_router
 from routers.routers.categories import router as categories_router
 from routers.routers.reports import router as reports_router
 from routers.routers.auth import router as auth_router
 
+import os
 
-# APP
+
 app = FastAPI()
 
-# DB init (tables create)
+# DB init
 Base.metadata.create_all(bind=engine)
+
+# uploads folder fix
+if not os.path.exists("uploads"):
+    os.makedirs("uploads")
+
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:4200"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# DB dependency (global use)
+# DB dependency
 def get_db():
     db = SessionLocal()
     try:
@@ -35,17 +41,11 @@ def get_db():
     finally:
         db.close()
 
-
 # ROUTERS
 app.include_router(auth_router)
 app.include_router(cities_router)
 app.include_router(categories_router)
 app.include_router(reports_router)
-
-
-# STATIC FILES
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
-
 
 # ROOT
 @app.get("/")
