@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import SessionLocal
@@ -8,6 +8,7 @@ from schemas import CategoryCreate, CategoryResponse
 router = APIRouter(prefix="/categories", tags=["Categories"])
 
 
+# DB dependency
 def get_db():
     db = SessionLocal()
     try:
@@ -19,6 +20,12 @@ def get_db():
 # CREATE CATEGORY
 @router.post("/", response_model=CategoryResponse)
 def create_category(category: CategoryCreate, db: Session = Depends(get_db)):
+
+    # optional: duplicate check (ძალიან მნიშვნელოვანია რეალურ პროექტში)
+    existing = db.query(Category).filter(Category.name == category.name).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Category already exists")
+
     new_category = Category(name=category.name)
 
     db.add(new_category)

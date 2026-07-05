@@ -1,20 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session 
+from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from database import SessionLocal
 from models import User
 import httpx
-from auth import create_access_token
 
-
-
-
+from auth import create_access_token  # თუ ციკლური import გაქვს, ეს ქვემოთ აგიხსნი
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+# DB dependency
 def get_db():
     db = SessionLocal()
     try:
@@ -23,6 +21,7 @@ def get_db():
         db.close()
 
 
+# REGISTER
 @router.post("/register")
 def register(name: str, email: str, password: str, db: Session = Depends(get_db)):
 
@@ -30,19 +29,19 @@ def register(name: str, email: str, password: str, db: Session = Depends(get_db)
     if user:
         raise HTTPException(status_code=400, detail="Email already exists")
 
-    hashed = pwd_context.hash(password)
+    hashed_password = pwd_context.hash(password)
 
     new_user = User(
         name=name,
         email=email,
-        password=hashed
+        password=hashed_password
     )
 
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
-    return {"message": "User created"}
+    return {"message": "User created successfully"}
 
 
 # LOGIN
@@ -65,18 +64,7 @@ def login(email: str, password: str, db: Session = Depends(get_db)):
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+# GOOGLE LOGIN
 @router.post("/google")
 async def google_login(token: str, db: Session = Depends(get_db)):
 
@@ -98,7 +86,6 @@ async def google_login(token: str, db: Session = Depends(get_db)):
 
     user = db.query(User).filter(User.email == email).first()
 
-    # თუ user არ არსებობს → ვქმნით
     if not user:
         user = User(
             name=name,
@@ -108,15 +95,15 @@ async def google_login(token: str, db: Session = Depends(get_db)):
         db.add(user)
         db.commit()
         db.refresh(user)
-        token = create_access_token({"user_id": user.id})
-        token = create_access_token({"user_id": user.id})
 
-        return {
-            "access_token": token,
-            "token_type": "bearer",
-            "user": {
-                "id": user.id,
-                "name": user.name,
-                "email": user.email
-            }
+    access_token = create_access_token({"user_id": user.id})
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email
         }
+    }
