@@ -3,9 +3,12 @@ from models import City
 
 db = SessionLocal()
 
-db.query(City).delete()
-
-db.commit()
-db.close()
-
-print("Cities cleared!")
+try:
+    db.query(City).delete(synchronize_session=False)
+    db.commit()
+    print("Cities cleared!")
+except Exception as e:
+    db.rollback()
+    print("Error:", e)
+finally:
+    db.close()
