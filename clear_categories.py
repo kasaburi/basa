@@ -12,3 +12,4 @@ except Exception as e:
     print("Error:", e)
 finally:
     db.close()
+

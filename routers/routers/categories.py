@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
-
 from database import SessionLocal
 from models import Category
 from schemas import CategoryCreate, CategoryResponse
@@ -38,4 +38,11 @@ def create_category(category: CategoryCreate, db: Session = Depends(get_db)):
 # GET ALL CATEGORIES
 @router.get("/", response_model=list[CategoryResponse])
 def get_categories(db: Session = Depends(get_db)):
-    return db.query(Category).all()
+    try:
+        return db.query(Category).all()
+
+    except OperationalError:
+        raise HTTPException(
+        status_code=500,
+        detail="Database connection failed"
+    )
