@@ -1,13 +1,11 @@
 from fastapi import APIRouter, Depends, Form, UploadFile, File, HTTPException
 from sqlalchemy.orm import Session
 from typing import Optional
-import os
-import uuid
-import shutil
-
+from cloudinary_config import cloudinary
+import cloudinary.uploader
 from database import SessionLocal
 from models import Report, Category, ReportStatusHistory
-from ai_service import suggest_category
+
 
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
@@ -25,13 +23,15 @@ def get_db():
 
 
 
-
+# ---------------------------
+# CREATE REPORT
+# ---------------------------
 @router.post("/")
 def create_report(
     title: str = Form(...),
     description: str = Form(...),
     city_id: int = Form(...),
-    category_id: int = Form(...),   # დაამატე აქ
+    category_id: int = Form(...),
     user_id: Optional[int] = Form(None),
     latitude: Optional[float] = Form(None),
     longitude: Optional[float] = Form(None),
@@ -40,30 +40,23 @@ def create_report(
 ):
 
 
+    # IMAGE UPLOAD TO CLOUDINARY
 
-
-
-
-    # 1. AI CATEGORY
-  
-
-    # 2. IMAGE UPLOAD
     image_url = None
 
     if file:
-        upload_dir = "uploads"
-        os.makedirs(upload_dir, exist_ok=True)
 
-        ext = file.filename.split(".")[-1]
-        filename = f"{uuid.uuid4()}.{ext}"
-        path = os.path.join(upload_dir, filename)
+        result = cloudinary.uploader.upload(
+            file.file,
+            folder="fix-georgia"
+        )
 
-        with open(path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        image_url = result["secure_url"]
 
-        image_url = f"/uploads/{filename}"
 
-    # 3. SAVE REPORT
+
+    # SAVE REPORT
+
     new_report = Report(
         title=title,
         description=description,
@@ -77,17 +70,17 @@ def create_report(
     )
 
 
-
-
-
     db.add(new_report)
     db.commit()
     db.refresh(new_report)
+
 
     return {
         "message": "Report created",
         "report": new_report
     }
+
+
 
 
 # ---------------------------
@@ -107,25 +100,52 @@ def filter_reports(
 
     query = db.query(Report)
 
+
     if city_id:
-        query = query.filter(Report.city_id == city_id)
+        query = query.filter(
+            Report.city_id == city_id
+        )
+
 
     if category_id:
-        query = query.filter(Report.category_id == category_id)
+        query = query.filter(
+            Report.category_id == category_id
+        )
+
 
     if status:
-        query = query.filter(Report.status == status)
+        query = query.filter(
+            Report.status == status
+        )
+
 
     if search:
-        query = query.filter(Report.title.contains(search))
+        query = query.filter(
+            Report.title.contains(search)
+        )
+
 
     if sort == "oldest":
-        query = query.order_by(Report.created_at.asc())
+        query = query.order_by(
+            Report.created_at.asc()
+        )
+
     else:
-        query = query.order_by(Report.created_at.desc())
+        query = query.order_by(
+            Report.created_at.desc()
+        )
+
 
     total = query.count()
-    results = query.offset((page - 1) * limit).limit(limit).all()
+
+
+    results = (
+        query
+        .offset((page - 1) * limit)
+        .limit(limit)
+        .all()
+    )
+
 
     return {
         "total": total,
@@ -135,77 +155,127 @@ def filter_reports(
     }
 
 
+
+
 # ---------------------------
-# UPDATE STATUS + HISTORY
+# UPDATE STATUS
 # ---------------------------
 @router.patch("/{report_id}/status")
-def update_status(report_id: int, status: str, db: Session = Depends(get_db)):
+def update_status(
+    report_id: int,
+    status: str,
+    db: Session = Depends(get_db)
+):
 
-    report = db.query(Report).filter(Report.id == report_id).first()
+    report = (
+        db.query(Report)
+        .filter(Report.id == report_id)
+        .first()
+    )
+
 
     if not report:
-        raise HTTPException(status_code=404, detail="Report not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Report not found"
+        )
+
 
     report.status = status
+
 
     history = ReportStatusHistory(
         report_id=report_id,
         status=status
     )
 
+
     db.add(history)
     db.commit()
 
-    return {"message": "Status updated", "status": status}
+
+    return {
+        "message": "Status updated",
+        "status": status
+    }
+
+
 
 
 # ---------------------------
 # STATS OVERVIEW
 # ---------------------------
 @router.get("/stats/overview")
-def stats_overview(db: Session = Depends(get_db)):
+def stats_overview(
+    db: Session = Depends(get_db)
+):
 
     return {
-        "total": db.query(Report).count(),
-        "pending": db.query(Report).filter(Report.status == "pending").count(),
-        "in_progress": db.query(Report).filter(Report.status == "in_progress").count(),
-        "solved": db.query(Report).filter(Report.status == "solved").count()
+
+        "total":
+            db.query(Report).count(),
+
+        "pending":
+            db.query(Report)
+            .filter(Report.status == "pending")
+            .count(),
+
+        "in_progress":
+            db.query(Report)
+            .filter(Report.status == "in_progress")
+            .count(),
+
+        "solved":
+            db.query(Report)
+            .filter(Report.status == "solved")
+            .count()
     }
+
+
 
 
 # ---------------------------
 # STATS BY CATEGORY
 # ---------------------------
 @router.get("/stats/by-category")
-def stats_by_category(db: Session = Depends(get_db)):
+def stats_by_category(
+    db: Session = Depends(get_db)
+):
 
     categories = db.query(Category).all()
 
+
     return [
+
         {
             "category": c.name,
-            "total": db.query(Report).filter(Report.category_id == c.id).count()
+            "total":
+                db.query(Report)
+                .filter(Report.category_id == c.id)
+                .count()
         }
+
         for c in categories
+
     ]
+
+
 
 
 # ---------------------------
 # IMAGE UPLOAD ONLY
 # ---------------------------
 @router.post("/upload")
-def upload_image(file: UploadFile = File(...)):
+def upload_image(
+    file: UploadFile = File(...)
+):
 
-    upload_dir = "uploads"
-    os.makedirs(upload_dir, exist_ok=True)
+    result = cloudinary.uploader.upload(
+        file.file,
+        folder="fix-georgia"
+    )
 
-    ext = file.filename.split(".")[-1]
-    filename = f"{uuid.uuid4()}.{ext}"
-    path = os.path.join(upload_dir, filename)
-
-    with open(path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
 
     return {
-        "url": f"/uploads/{filename}"
+        "url": result["secure_url"]
     }
