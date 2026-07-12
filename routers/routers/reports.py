@@ -53,11 +53,16 @@ def create_report(
 
         image_url = result["secure_url"]
 
+        print("CLOUDINARY URL:", image_url)
+
+
 
     # AI CATEGORY DETECTION
+
     ai_category_id = suggest_category(
         title + " " + description
     )
+
 
 
     # SAVE REPORT
@@ -88,11 +93,6 @@ def create_report(
         "ai_category_id": ai_category_id,
         "report": new_report
     }
-
-
-
-
-
 
 
 
@@ -302,17 +302,12 @@ def stats_by_category(
 # ---------------------------
 # IMAGE UPLOAD ONLY
 # ---------------------------
-@router.post("/upload")
-def upload_image(
-    file: UploadFile = File(...)
-):
-
-    result = cloudinary.uploader.upload(
-        file.file,
-        folder="fix-georgia"
-    )
+#
 
 
-    return {
-        "url": result["secure_url"]
-    }
+
+
+
+# @router.post("/upload")
+
+
