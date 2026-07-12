@@ -6,7 +6,7 @@ import cloudinary.uploader
 from database import SessionLocal
 from models import Report, Category, ReportStatusHistory
 from sqlalchemy import or_
-
+from ai_service import suggest_category
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
 
@@ -31,7 +31,7 @@ def create_report(
     title: str = Form(...),
     description: str = Form(...),
     city_id: int = Form(...),
-    category_id: int = Form(...),
+    category_id: int = Form(None),
     user_id: Optional[int] = Form(None),
     latitude: Optional[float] = Form(None),
     longitude: Optional[float] = Form(None),
@@ -54,6 +54,11 @@ def create_report(
         image_url = result["secure_url"]
 
 
+    # AI CATEGORY DETECTION
+    ai_category_id = suggest_category(
+        title + " " + description
+    )
+
 
     # SAVE REPORT
 
@@ -61,7 +66,10 @@ def create_report(
         title=title,
         description=description,
         city_id=city_id,
-        category_id=category_id,
+
+        # AI-ს მიერ შერჩეული კატეგორია
+        category_id=ai_category_id,
+
         user_id=user_id,
         latitude=latitude,
         longitude=longitude,
@@ -77,8 +85,24 @@ def create_report(
 
     return {
         "message": "Report created",
+        "ai_category_id": ai_category_id,
         "report": new_report
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
