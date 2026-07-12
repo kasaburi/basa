@@ -5,7 +5,7 @@ from cloudinary_config import cloudinary
 import cloudinary.uploader
 from database import SessionLocal
 from models import Report, Category, ReportStatusHistory
-
+from sqlalchemy import or_
 
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
@@ -85,7 +85,7 @@ def create_report(
 
 # ---------------------------
 # FILTER REPORTS
-# ---------------------------
+#
 @router.get("/filter")
 def filter_reports(
     city_id: Optional[int] = None,
@@ -100,44 +100,41 @@ def filter_reports(
 
     query = db.query(Report)
 
-
-    if city_id:
+    if city_id is not None:
         query = query.filter(
             Report.city_id == city_id
         )
 
-
-    if category_id:
+    if category_id is not None:
         query = query.filter(
             Report.category_id == category_id
         )
-
 
     if status:
         query = query.filter(
             Report.status == status
         )
 
-
     if search:
-        query = query.filter(
-            Report.title.contains(search)
-        )
+        search = search.strip()
 
+        query = query.filter(
+            or_(
+                Report.title.ilike(f"%{search}%"),
+                Report.description.ilike(f"%{search}%")
+            )
+        )
 
     if sort == "oldest":
         query = query.order_by(
             Report.created_at.asc()
         )
-
     else:
         query = query.order_by(
             Report.created_at.desc()
         )
 
-
     total = query.count()
-
 
     results = (
         query
@@ -146,13 +143,29 @@ def filter_reports(
         .all()
     )
 
-
     return {
         "total": total,
         "page": page,
         "limit": limit,
         "data": results
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
