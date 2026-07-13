@@ -1,16 +1,18 @@
 from datetime import datetime, timedelta
-
 from jose import jwt, JWTError
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-
+import os
 from database import SessionLocal
 from models import User
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 
-SECRET_KEY = "supersecretkey123"
+SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
