@@ -1,25 +1,24 @@
 from fastapi import APIRouter, Depends, Form, UploadFile, File, HTTPException
 from sqlalchemy.orm import Session
 from typing import Optional
-from cloudinary_config import cloudinary
-import cloudinary.uploader
+from sqlalchemy import or_
 from database import SessionLocal
 from models import Report, Category, ReportStatusHistory, User
-from auth import get_current_user
-from sqlalchemy import or_
-from ai_service import suggest_category
-from auth import get_current_user
-router = APIRouter(prefix="/reports", tags=["Reports"])
-from dependencies import admin_required
-
-
-
-
-
-
-
-
 import os
+from cloudinary_config import cloudinary
+import cloudinary.uploader
+from auth import get_current_user, admin_required
+from ai_service import suggest_category
+
+router = APIRouter(
+    prefix="/reports",
+    tags=["Reports"]
+)
+
+
+
+
+
 
 
 # ---------------------------
@@ -333,17 +332,14 @@ def delete_report(
         .first()
     )
 
-
     if not report:
         raise HTTPException(
             status_code=404,
             detail="Report not found"
         )
 
-
     db.delete(report)
     db.commit()
-
 
     return {
         "message": "Report deleted"
