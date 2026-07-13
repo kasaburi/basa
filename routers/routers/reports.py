@@ -4,11 +4,23 @@ from typing import Optional
 from cloudinary_config import cloudinary
 import cloudinary.uploader
 from database import SessionLocal
-from models import Report, Category, ReportStatusHistory
+from models import Report, Category, ReportStatusHistory, User
+from auth import get_current_user
 from sqlalchemy import or_
 from ai_service import suggest_category
-
+from auth import get_current_user
 router = APIRouter(prefix="/reports", tags=["Reports"])
+
+
+
+
+
+
+
+
+
+
+import os
 
 
 # ---------------------------
@@ -26,23 +38,26 @@ def get_db():
 # ---------------------------
 # CREATE REPORT
 # ---------------------------
+# CREATE REPORT
+# ---------------------------
 @router.post("/")
 def create_report(
     title: str = Form(...),
     description: str = Form(...),
     city_id: int = Form(...),
-    category_id: int = Form(None),
-    user_id: Optional[int] = Form(None),
+    category_id: Optional[int] = Form(None),
     latitude: Optional[float] = Form(None),
     longitude: Optional[float] = Form(None),
     file: UploadFile = File(None),
-    db: Session = Depends(get_db)
+
+    db: Session = Depends(get_db),
+
+    current_user: User = Depends(get_current_user)
 ):
 
 
-    # IMAGE UPLOAD TO CLOUDINARY
-
     image_url = None
+
 
     if file:
 
@@ -53,11 +68,7 @@ def create_report(
 
         image_url = result["secure_url"]
 
-        print("CLOUDINARY URL:", image_url)
 
-
-
-    # AI CATEGORY DETECTION
 
     ai_category_id = suggest_category(
         title + " " + description
@@ -65,41 +76,54 @@ def create_report(
 
 
 
-    # SAVE REPORT
-
     new_report = Report(
+
         title=title,
+
         description=description,
+
         city_id=city_id,
 
-        # AI-ს მიერ შერჩეული კატეგორია
         category_id=ai_category_id,
 
-        user_id=user_id,
+        user_id=current_user.id,
+
         latitude=latitude,
+
         longitude=longitude,
+
         image_url=image_url,
+
         status="pending"
     )
 
 
+
     db.add(new_report)
+
     db.commit()
+
     db.refresh(new_report)
 
 
+
     return {
+
         "message": "Report created",
-        "ai_category_id": ai_category_id,
-        "report": new_report
+
+        "report": {
+
+            "id": new_report.id,
+
+            "title": new_report.title,
+
+            "user_id": new_report.user_id,
+
+            "image_url": new_report.image_url
+
+        }
+
     }
-
-
-
-
-
-
-
 
 
 

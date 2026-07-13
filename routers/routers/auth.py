@@ -10,39 +10,40 @@ from google.auth.transport import requests
 
 from database import SessionLocal
 from models import User
+
 from auth import create_access_token
 
 
+router = APIRouter(
+    prefix="/auth",
+    tags=["Auth"]
+)
 
-
-
-
-
-
-
-
-router = APIRouter(prefix="/auth", tags=["Auth"])
 
 pwd_context = CryptContext(
     schemes=["bcrypt"],
     deprecated="auto"
 )
 
+
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 
 
-# ---------------- DB ----------------
+# DATABASE
 
 def get_db():
+
     db = SessionLocal()
 
     try:
         yield db
+
     finally:
         db.close()
 
 
-# ---------------- SCHEMAS ----------------
+
+# SCHEMAS
 
 class RegisterRequest(BaseModel):
     name: str
@@ -50,16 +51,19 @@ class RegisterRequest(BaseModel):
     password: str
 
 
+
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+
 
 
 class GoogleLoginRequest(BaseModel):
     token: str
 
 
-# ---------------- REGISTER ----------------
+
+# REGISTER
 
 @router.post("/register")
 def register(
@@ -67,19 +71,39 @@ def register(
     db: Session = Depends(get_db)
 ):
 
-    user = (
+    existing_user = (
         db.query(User)
         .filter(User.email == data.email)
         .first()
     )
 
-    if user:
+
+    if existing_user:
         raise HTTPException(
             status_code=400,
             detail="Email already exists"
         )
 
-    hashed_password = pwd_context.hash(data.password)
+
+    if len(data.password) < 6:
+        raise HTTPException(
+            status_code=400,
+            detail="Password must be at least 6 characters"
+        )
+
+
+    # bcrypt maximum 72 bytes
+    if len(data.password.encode("utf-8")) > 72:
+        raise HTTPException(
+            status_code=400,
+            detail="Password is too long"
+        )
+
+
+    hashed_password = pwd_context.hash(
+        data.password
+    )
+
 
     new_user = User(
         name=data.name,
@@ -87,15 +111,21 @@ def register(
         password=hashed_password
     )
 
+
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
-    token = create_access_token({
-        "user_id": new_user.id
-    })
+
+    token = create_access_token(
+        {
+            "user_id": new_user.id
+        }
+    )
+
 
     return {
+        "message": "Registration successful",
         "access_token": token,
         "token_type": "bearer",
         "user": {
@@ -106,7 +136,8 @@ def register(
     }
 
 
-# ---------------- LOGIN ----------------
+
+# LOGIN
 
 @router.post("/login")
 def login(
@@ -120,17 +151,13 @@ def login(
         .first()
     )
 
+
     if not user:
         raise HTTPException(
             status_code=401,
             detail="Invalid email or password"
         )
 
-    if user.password == "google_oauth":
-        raise HTTPException(
-            status_code=401,
-            detail="Please login with Google"
-        )
 
     if not pwd_context.verify(
         data.password,
@@ -141,9 +168,13 @@ def login(
             detail="Invalid email or password"
         )
 
-    token = create_access_token({
-        "user_id": user.id
-    })
+
+    token = create_access_token(
+        {
+            "user_id": user.id
+        }
+    )
+
 
     return {
         "access_token": token,
@@ -156,7 +187,9 @@ def login(
     }
 
 
-# ---------------- GOOGLE LOGIN ----------------
+
+
+# GOOGLE LOGIN
 
 @router.post("/google")
 def google_login(
@@ -203,17 +236,23 @@ def google_login(
         user = User(
             name=name,
             email=email,
-            password="google_oauth"
+            password=pwd_context.hash(
+                os.urandom(16).hex()
+            )
         )
+
 
         db.add(user)
         db.commit()
         db.refresh(user)
 
 
-    token = create_access_token({
-        "user_id": user.id
-    })
+
+    token = create_access_token(
+        {
+            "user_id": user.id
+        }
+    )
 
 
     return {
