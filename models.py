@@ -17,6 +17,9 @@ class User(Base):
     name = Column(String)
     email = Column(String, unique=True)
     password = Column(String)
+    role = Column(String, default="user")
+
+    reports = relationship("Report", back_populates="user")  
 # CITIES
 class City(Base):
     __tablename__ = "cities"

@@ -28,3 +28,13 @@ SessionLocal = sessionmaker(
 
 # base model
 Base = declarative_base()
+
+
+
+# database session dependency
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

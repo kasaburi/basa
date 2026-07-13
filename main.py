@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from database import Base, engine, SessionLocal
 import models
+from routers.routers import statistics
 
 from routers.routers.cities import router as cities_router
 from routers.routers.categories import router as categories_router
@@ -14,7 +15,7 @@ import os
 
 
 app = FastAPI()
-
+app.include_router(statistics.router)
 # DB init
 Base.metadata.create_all(bind=engine)
 

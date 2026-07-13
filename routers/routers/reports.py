@@ -19,7 +19,6 @@ router = APIRouter(prefix="/reports", tags=["Reports"])
 
 
 
-
 import os
 
 
@@ -321,8 +320,39 @@ def stats_by_category(
     ]
 
 
+@router.delete("/{report_id}")
+def delete_report(
+    report_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Only admin can delete reports"
+        )
 
 
+    report = db.query(Report).filter(
+        Report.id == report_id
+    ).first()
+
+
+    if not report:
+        raise HTTPException(
+            status_code=404,
+            detail="Report not found"
+        )
+
+
+    db.delete(report)
+    db.commit()
+
+
+    return {
+        "message": "Report deleted"
+    }
 # ---------------------------
 # IMAGE UPLOAD ONLY
 # ---------------------------
