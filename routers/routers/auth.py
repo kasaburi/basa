@@ -2,7 +2,7 @@ import os
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from passlib.context import CryptContext
+from pwdlib import PasswordHash
 from pydantic import BaseModel, EmailStr
 
 from google.oauth2 import id_token
@@ -20,10 +20,7 @@ router = APIRouter(
 )
 
 
-pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto"
-)
+password_hash = PasswordHash.recommended()
 
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
@@ -63,6 +60,7 @@ class GoogleLoginRequest(BaseModel):
 
 
 
+
 # REGISTER
 
 @router.post("/register")
@@ -92,15 +90,7 @@ def register(
         )
 
 
-    # bcrypt maximum 72 bytes
-    if len(data.password.encode("utf-8")) > 72:
-        raise HTTPException(
-            status_code=400,
-            detail="Password is too long"
-        )
-
-
-    hashed_password = pwd_context.hash(
+    hashed_password = password_hash.hash(
         data.password
     )
 
@@ -137,6 +127,8 @@ def register(
 
 
 
+
+
 # LOGIN
 
 @router.post("/login")
@@ -159,7 +151,7 @@ def login(
         )
 
 
-    if not pwd_context.verify(
+    if not password_hash.verify(
         data.password,
         user.password
     ):
@@ -189,6 +181,7 @@ def login(
 
 
 
+
 # GOOGLE LOGIN
 
 @router.post("/google")
@@ -205,12 +198,14 @@ def google_login(
             GOOGLE_CLIENT_ID
         )
 
+
     except ValueError:
 
         raise HTTPException(
             status_code=401,
             detail="Invalid Google token"
         )
+
 
 
     email = google_user.get("email")
@@ -224,6 +219,7 @@ def google_login(
         )
 
 
+
     user = (
         db.query(User)
         .filter(User.email == email)
@@ -231,12 +227,13 @@ def google_login(
     )
 
 
+
     if not user:
 
         user = User(
             name=name,
             email=email,
-            password=pwd_context.hash(
+            password=password_hash.hash(
                 os.urandom(16).hex()
             )
         )
@@ -245,6 +242,7 @@ def google_login(
         db.add(user)
         db.commit()
         db.refresh(user)
+
 
 
 
