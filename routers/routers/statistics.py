@@ -10,7 +10,6 @@ from models import Report, Category, City
 
 
 
-
 router = APIRouter(
     prefix="/statistics",
     tags=["Statistics"]
