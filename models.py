@@ -9,7 +9,7 @@ from database import Base
 
 
 
-
+role = Column(String, default="user")
 class User(Base):
     __tablename__ = "users"
 
