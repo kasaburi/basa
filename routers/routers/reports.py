@@ -10,7 +10,7 @@ from sqlalchemy import or_
 from ai_service import suggest_category
 from auth import get_current_user
 router = APIRouter(prefix="/reports", tags=["Reports"])
-
+from dependencies import admin_required
 
 
 
@@ -323,20 +323,15 @@ def stats_by_category(
 @router.delete("/{report_id}")
 def delete_report(
     report_id: int,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin: User = Depends(admin_required)
 ):
 
-    if current_user.role != "admin":
-        raise HTTPException(
-            status_code=403,
-            detail="Only admin can delete reports"
-        )
-
-
-    report = db.query(Report).filter(
-        Report.id == report_id
-    ).first()
+    report = (
+        db.query(Report)
+        .filter(Report.id == report_id)
+        .first()
+    )
 
 
     if not report:
