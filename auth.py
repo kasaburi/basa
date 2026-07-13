@@ -8,11 +8,16 @@ from database import SessionLocal
 from models import User
 from dotenv import load_dotenv
 
+
 load_dotenv()
 
 
-
 SECRET_KEY = os.getenv("SECRET_KEY")
+
+if not SECRET_KEY:
+    raise Exception("SECRET_KEY is missing in environment variables")
+
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
@@ -36,13 +41,17 @@ def get_db():
 
 
 
+
+
 def create_access_token(data: dict):
 
     to_encode = data.copy()
 
+
     expire = datetime.utcnow() + timedelta(
         minutes=ACCESS_TOKEN_EXPIRE_MINUTES
     )
+
 
     to_encode.update({
         "exp": expire
@@ -54,6 +63,8 @@ def create_access_token(data: dict):
         SECRET_KEY,
         algorithm=ALGORITHM
     )
+
+
 
 
 
@@ -84,22 +95,16 @@ def get_current_user(
         if user_id is None:
 
             raise HTTPException(
-
                 status_code=401,
-
                 detail="Invalid token"
-
             )
 
 
     except JWTError:
 
         raise HTTPException(
-
             status_code=401,
-
             detail="Invalid token"
-
         )
 
 
@@ -118,11 +123,8 @@ def get_current_user(
     if user is None:
 
         raise HTTPException(
-
             status_code=404,
-
             detail="User not found"
-
         )
 
 
