@@ -1,12 +1,14 @@
 from datetime import datetime, timedelta
+import os
+
 from jose import jwt, JWTError
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-import os
+from dotenv import load_dotenv
+
 from database import SessionLocal
 from models import User
-from dotenv import load_dotenv
 
 
 load_dotenv()
@@ -19,6 +21,7 @@ if not SECRET_KEY:
 
 
 ALGORITHM = "HS256"
+
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 
@@ -28,6 +31,8 @@ oauth2_scheme = OAuth2PasswordBearer(
 )
 
 
+
+# DATABASE
 
 def get_db():
 
@@ -42,6 +47,8 @@ def get_db():
 
 
 
+
+# CREATE JWT TOKEN
 
 def create_access_token(data: dict):
 
@@ -58,15 +65,21 @@ def create_access_token(data: dict):
     })
 
 
-    return jwt.encode(
+    token = jwt.encode(
         to_encode,
         SECRET_KEY,
         algorithm=ALGORITHM
     )
 
 
+    return token
 
 
+
+
+
+
+# CURRENT USER
 
 def get_current_user(
 
@@ -110,13 +123,9 @@ def get_current_user(
 
 
     user = (
-
         db.query(User)
-
         .filter(User.id == user_id)
-
         .first()
-
     )
 
 

@@ -128,8 +128,6 @@ def register(
 
 
 
-
-# LOGIN
 @router.post("/login")
 def login(
     data: LoginRequest,
@@ -145,6 +143,7 @@ def login(
     print("EMAIL:", data.email)
     print("USER:", user)
 
+
     if not user:
         raise HTTPException(
             status_code=401,
@@ -152,18 +151,16 @@ def login(
         )
 
 
-    print("DB PASSWORD:", user.password)
-
-
-    result = password_hash.verify(
+    password_correct = password_hash.verify(
         data.password,
         user.password
     )
 
-    print("PASSWORD MATCH:", result)
+
+    print("PASSWORD MATCH:", password_correct)
 
 
-    if not result:
+    if not password_correct:
         raise HTTPException(
             status_code=401,
             detail="Wrong password"
@@ -186,22 +183,6 @@ def login(
             "email": user.email
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
