@@ -125,11 +125,11 @@ def create_report(
 
 
 
-
 @router.patch("/{report_id}/solve")
 def solve_report(
-    report_id:int,
-    db:Session=Depends(get_db)
+    report_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
 
     report = db.query(Report).filter(
@@ -144,16 +144,28 @@ def solve_report(
         )
 
 
+    # აქ შემდეგ დავამატებთ admin შემოწმებას
     report.status = "solved"
+
 
     db.commit()
     db.refresh(report)
 
 
     return {
-        "message":"Problem solved",
-        "report":report
+        "message": "Report solved",
+        "id": report.id,
+        "status": report.status
     }
+
+
+
+
+
+
+
+
+
 
 
 # ---------------------------
