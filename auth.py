@@ -6,7 +6,7 @@ from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
-from auth import get_current_user
+
 from database import SessionLocal
 from models import User
 
