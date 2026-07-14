@@ -126,7 +126,34 @@ def create_report(
 
 
 
+@router.patch("/{report_id}/solve")
+def solve_report(
+    report_id:int,
+    db:Session=Depends(get_db)
+):
 
+    report = db.query(Report).filter(
+        Report.id == report_id
+    ).first()
+
+
+    if not report:
+        raise HTTPException(
+            status_code=404,
+            detail="Report not found"
+        )
+
+
+    report.status = "solved"
+
+    db.commit()
+    db.refresh(report)
+
+
+    return {
+        "message":"Problem solved",
+        "report":report
+    }
 
 
 # ---------------------------
