@@ -369,7 +369,64 @@ def delete_report(
 
 
 
+@router.get("/filter")
+def filter_reports(
+    city_id: Optional[int] = None,
+    category_id: Optional[int] = None,
+    status: Optional[str] = None,
+    search: Optional[str] = None,
+    sort: str = "newest",
+    page: int = 1,
+    limit: int = 100,
+    db: Session = Depends(get_db)
+):
 
+    page = max(page, 1)
+    limit = min(max(limit, 1), 100)
+
+    query = db.query(Report)
+
+    if city_id:
+        query = query.filter(Report.city_id == city_id)
+
+    if category_id:
+        query = query.filter(Report.category_id == category_id)
+
+    if status:
+        query = query.filter(Report.status == status)
+
+    if search:
+        search = search.strip()
+
+        if search:
+            query = query.filter(
+                or_(
+                    Report.title.ilike(f"%{search}%"),
+                    Report.description.ilike(f"%{search}%")
+                )
+            )
+
+    if sort == "oldest":
+        query = query.order_by(Report.created_at.asc())
+    else:
+        query = query.order_by(Report.created_at.desc())
+
+    total = query.count()
+
+    reports = (
+        query
+        .offset((page - 1) * limit)
+        .limit(limit)
+        .all()
+    )
+
+    return {
+        "success": True,
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "data": reports
+    }
 
 # @router.post("/upload")
 
