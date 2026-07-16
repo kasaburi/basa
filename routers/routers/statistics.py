@@ -34,13 +34,18 @@ def get_summary(db: Session = Depends(get_db)):
         Report.status == "in_progress"
     ).count()
 
+
     return {
         "total_reports": total_reports,
         "solved": solved,
         "pending": pending,
-        "in_progress": in_progress
+        "in_progress": in_progress,
+        "completion_rate": round(
+            (solved / total_reports * 100)
+            if total_reports > 0 else 0,
+            2
+        )
     }
-
 
 # კატეგორიების სტატისტიკა
 @router.get("/categories")

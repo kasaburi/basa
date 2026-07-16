@@ -9,6 +9,9 @@ from cloudinary_config import cloudinary
 import cloudinary.uploader
 from auth import get_current_user, admin_required
 from ai_service import suggest_category
+from auth import get_current_user, admin_required
+
+
 
 router = APIRouter(
     prefix="/reports",
@@ -125,6 +128,14 @@ def create_report(
 
 
 
+
+
+
+
+
+
+
+
 @router.patch("/{report_id}/solve")
 def solve_report(
     report_id: int,
@@ -144,9 +155,16 @@ def solve_report(
         )
 
 
-    # აქ შემდეგ დავამატებთ admin შემოწმებას
     report.status = "solved"
 
+
+    history = ReportStatusHistory(
+        report_id=report_id,
+        status="solved"
+    )
+
+
+    db.add(history)
 
     db.commit()
     db.refresh(report)
@@ -157,9 +175,6 @@ def solve_report(
         "id": report.id,
         "status": report.status
     }
-
-
-
 
 
 
@@ -356,8 +371,6 @@ def stats_by_category(
         for c in categories
 
     ]
-
-
 @router.delete("/{report_id}")
 def delete_report(
     report_id: int,
@@ -377,11 +390,14 @@ def delete_report(
             detail="Report not found"
         )
 
-    db.delete(report)
+
+    report.is_deleted = True
+
     db.commit()
 
+
     return {
-        "message": "Report deleted"
+        "message": "Report archived"
     }
 # ---------------------------
 # IMAGE UPLOAD ONLY
