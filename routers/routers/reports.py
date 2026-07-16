@@ -52,16 +52,12 @@ def create_report(
     file: UploadFile = File(None),
 
     db: Session = Depends(get_db),
-
     current_user: User = Depends(get_current_user)
 ):
 
-
     image_url = None
 
-
     if file:
-
         result = cloudinary.uploader.upload(
             file.file,
             folder="fix-georgia"
@@ -69,65 +65,43 @@ def create_report(
 
         image_url = result["secure_url"]
 
+    # თუ მომხმარებელმა არ აირჩია კატეგორია,
+    # მაშინ AI განსაზღვრავს მას.
+    final_category = category_id
 
-
-    ai_category_id = suggest_category(
-        title + " " + description
-    )
-
-
+    if final_category is None:
+        final_category = suggest_category(
+            title + " " + description
+        )
 
     new_report = Report(
-
         title=title,
-
         description=description,
-
         city_id=city_id,
-
-        category_id=ai_category_id,
-
+        category_id=final_category,
         user_id=current_user.id,
-
         latitude=latitude,
-
         longitude=longitude,
-
         image_url=image_url,
-
         status="pending"
     )
 
-
-
     db.add(new_report)
-
     db.commit()
-
     db.refresh(new_report)
 
-
-
     return {
-
         "message": "Report created",
-
         "report": {
-
             "id": new_report.id,
-
             "title": new_report.title,
-
-            "user_id": new_report.user_id,
-
+            "description": new_report.description,
+            "city_id": new_report.city_id,
+            "category_id": new_report.category_id,
+            "status": new_report.status,
             "image_url": new_report.image_url
-
         }
-
     }
-
-
-
 
 
 
@@ -185,8 +159,7 @@ def solve_report(
 
 # ---------------------------
 # FILTER REPORTS
-#
-@router.get("/filter")
+#@router.get("/filter")
 def filter_reports(
     city_id: Optional[int] = None,
     category_id: Optional[int] = None,
@@ -194,49 +167,43 @@ def filter_reports(
     search: Optional[str] = None,
     sort: str = "newest",
     page: int = 1,
-    limit: int = 5,
+    limit: int = 100,
     db: Session = Depends(get_db)
 ):
 
+    page = max(page, 1)
+    limit = min(max(limit, 1), 100)
+
     query = db.query(Report)
 
-    if city_id is not None:
-        query = query.filter(
-            Report.city_id == city_id
-        )
+    if city_id:
+        query = query.filter(Report.city_id == city_id)
 
-    if category_id is not None:
-        query = query.filter(
-            Report.category_id == category_id
-        )
+    if category_id:
+        query = query.filter(Report.category_id == category_id)
 
     if status:
-        query = query.filter(
-            Report.status == status
-        )
+        query = query.filter(Report.status == status)
 
     if search:
         search = search.strip()
 
-        query = query.filter(
-            or_(
-                Report.title.ilike(f"%{search}%"),
-                Report.description.ilike(f"%{search}%")
+        if search:
+            query = query.filter(
+                or_(
+                    Report.title.ilike(f"%{search}%"),
+                    Report.description.ilike(f"%{search}%")
+                )
             )
-        )
 
     if sort == "oldest":
-        query = query.order_by(
-            Report.created_at.asc()
-        )
+        query = query.order_by(Report.created_at.asc())
     else:
-        query = query.order_by(
-            Report.created_at.desc()
-        )
+        query = query.order_by(Report.created_at.desc())
 
     total = query.count()
 
-    results = (
+    reports = (
         query
         .offset((page - 1) * limit)
         .limit(limit)
@@ -244,16 +211,12 @@ def filter_reports(
     )
 
     return {
+        "success": True,
         "total": total,
         "page": page,
         "limit": limit,
-        "data": results
+        "data": reports
     }
-
-
-
-
-
 
 
 
