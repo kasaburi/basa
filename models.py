@@ -1,9 +1,8 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, Float, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from datetime import datetime
 from database import Base
-
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, Float, DateTime, Boolean
 
 # USERS
 
@@ -59,6 +58,8 @@ class Report(Base):
 
     status = Column(String, default="pending")  # pending / in_progress / solved
 
+    is_deleted = Column(Boolean, default=False)
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
@@ -69,8 +70,6 @@ class Report(Base):
 
     status_history = relationship("ReportStatusHistory", back_populates="report")
     ratings = relationship("Rating", back_populates="report")
-
-
 # STATUS HISTORY
 class ReportStatusHistory(Base):
     __tablename__ = "report_status_history"
@@ -100,3 +99,6 @@ class Rating(Base):
 
     report = relationship("Report", back_populates="ratings")
     user = relationship("User")
+
+
+
