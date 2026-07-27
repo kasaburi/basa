@@ -13,6 +13,7 @@ from auth import get_current_user, admin_required
 
 
 
+
 router = APIRouter(
     prefix="/reports",
     tags=["Reports"]
@@ -39,12 +40,10 @@ def get_db():
 # ---------------------------
 # CREATE REPORT
 # ---------------------------
-# CREATE REPORT
-# ---------------------------
 @router.post("/")
 def create_report(
-    title: str = Form(...),
-    description: str = Form(...),
+    title_ka: str = Form(...),
+    description_ka: str = Form(...),
     city_id: int = Form(...),
     category_id: Optional[int] = Form(None),
     latitude: Optional[float] = Form(None),
@@ -65,43 +64,71 @@ def create_report(
 
         image_url = result["secure_url"]
 
+
     # თუ მომხმარებელმა არ აირჩია კატეგორია,
-    # მაშინ AI განსაზღვრავს მას.
+    # AI განსაზღვრავს მას
     final_category = category_id
 
     if final_category is None:
         final_category = suggest_category(
-            title + " " + description
+            title_ka + " " + description_ka
         )
 
+
+    # დროებით ცარიელია, სანამ თარგმნის ფუნქციას ჩავრთავთ
+    title_en = None
+    description_en = None
+
+
     new_report = Report(
-        title=title,
-        description=description,
+
+        title_ka=title_ka,
+        title_en=title_en,
+
+        description_ka=description_ka,
+        description_en=description_en,
+
         city_id=city_id,
         category_id=final_category,
         user_id=current_user.id,
+
         latitude=latitude,
         longitude=longitude,
+
         image_url=image_url,
+
         status="pending"
     )
+
 
     db.add(new_report)
     db.commit()
     db.refresh(new_report)
 
+
     return {
         "message": "Report created",
+
         "report": {
             "id": new_report.id,
-            "title": new_report.title,
-            "description": new_report.description,
+
+            "title_ka": new_report.title_ka,
+            "title_en": new_report.title_en,
+
+            "description_ka": new_report.description_ka,
+            "description_en": new_report.description_en,
+
             "city_id": new_report.city_id,
             "category_id": new_report.category_id,
+
             "status": new_report.status,
+
             "image_url": new_report.image_url
         }
     }
+
+
+
 
 
 
@@ -149,26 +176,6 @@ def solve_report(
         "id": report.id,
         "status": report.status
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -308,7 +315,6 @@ def delete_report(
 # ---------------------------
 #
 
-
 @router.get("/filter")
 def filter_reports(
     city_id: Optional[int] = None,
@@ -321,14 +327,16 @@ def filter_reports(
     db: Session = Depends(get_db)
 ):
 
+    # pagination დაცვა
     page = max(page, 1)
     limit = min(max(limit, 1), 100)
 
-    # ნაგულისხმევად ვაჩვენებთ მხოლოდ აქტიურ პრობლემებს
+
+    # ძირითადი query
     query = db.query(Report).filter(
-    Report.status != "solved",
-    Report.is_deleted == False
-)
+        Report.is_deleted == False
+    )
+
 
     # ქალაქის ფილტრი
     if city_id:
@@ -336,30 +344,47 @@ def filter_reports(
             Report.city_id == city_id
         )
 
+
     # კატეგორიის ფილტრი
     if category_id:
         query = query.filter(
             Report.category_id == category_id
         )
 
-    # თუ კონკრეტული სტატუსი გადმოვიდა,
-    # მაშინ მხოლოდ ის სტატუსი მოძებნოს
+
+    # სტატუსის ფილტრი
     if status:
         query = query.filter(
             Report.status == status
         )
+    else:
+        # default - არ აჩვენოს დასრულებული პრობლემები
+        query = query.filter(
+            Report.status != "solved"
+        )
 
-    # ძებნა სათაურში და აღწერაში
+
+    # ძებნა ყველა ენის ველში
     if search:
         search = search.strip()
 
         if search:
             query = query.filter(
                 or_(
+                    # ძველი ველები
                     Report.title.ilike(f"%{search}%"),
-                    Report.description.ilike(f"%{search}%")
+                    Report.description.ilike(f"%{search}%"),
+
+                    # ქართული
+                    Report.title_ka.ilike(f"%{search}%"),
+                    Report.description_ka.ilike(f"%{search}%"),
+
+                    # ინგლისური
+                    Report.title_en.ilike(f"%{search}%"),
+                    Report.description_en.ilike(f"%{search}%")
                 )
             )
+
 
     # დალაგება
     if sort == "oldest":
@@ -371,14 +396,19 @@ def filter_reports(
             Report.created_at.desc()
         )
 
+
+    # საერთო რაოდენობა
     total = query.count()
 
+
+    # მონაცემები
     reports = (
         query
         .offset((page - 1) * limit)
         .limit(limit)
         .all()
     )
+
 
     return {
         "success": True,

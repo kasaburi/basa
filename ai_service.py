@@ -61,22 +61,43 @@ def ai_model_predict(text: str):
     Example: HuggingFace model or OpenAI API
     """
     return "other"
-
+    return CATEGORY_MAP.get(label, CATEGORY_MAP["other"])
 
 # -------------------------
 # 3. MAIN FUNCTION
+
+
+
+
+
+
+# -------------------------
+# TRANSLATION FUNCTION
 # -------------------------
 def suggest_category(text: str) -> int:
     """
     Returns category DB ID
     """
 
-    # 1. FAST RULE-BASED
     label = rule_based(text)
 
-    # 2. FALLBACK TO AI (if needed)
     if label == "other":
         label = ai_model_predict(text)
 
-    # 3. RETURN DB ID
     return CATEGORY_MAP.get(label, CATEGORY_MAP["other"])
+
+
+# -------------------------
+# TRANSLATION FUNCTION
+# -------------------------
+def translate_text(text: str, target_language="en"):
+    """
+    Translate text.
+    Temporary version.
+    Later connect OpenAI / Google Translate API.
+    """
+
+    if not text:
+        return None
+
+    return text
