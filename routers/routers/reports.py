@@ -10,7 +10,7 @@ import cloudinary.uploader
 from auth import get_current_user, admin_required
 from ai_service import suggest_category
 from auth import get_current_user, admin_required
-
+from services.translator import translate_text
 
 
 
@@ -76,8 +76,8 @@ def create_report(
 
 
     # დროებით ცარიელია, სანამ თარგმნის ფუნქციას ჩავრთავთ
-    title_en = None
-    description_en = None
+    title_en = translate_text(title_ka)
+    description_en = translate_text(description_ka)
 
 
     new_report = Report(
