@@ -40,6 +40,9 @@ def get_db():
 # ---------------------------
 # CREATE REPORT
 # ---------------------------
+# ---------------------------
+# CREATE REPORT
+# ---------------------------
 @router.post("/")
 def create_report(
     title_ka: str = Form(...),
@@ -56,17 +59,27 @@ def create_report(
 
     image_url = None
 
+
+    # IMAGE UPLOAD
     if file:
-        result = cloudinary.uploader.upload(
-            file.file,
-            folder="fix-georgia"
-        )
+        try:
+            result = cloudinary.uploader.upload(
+                file.file,
+                folder="fix-georgia"
+            )
 
-        image_url = result["secure_url"]
+            image_url = result["secure_url"]
+
+        except Exception as e:
+            print("Cloudinary error:", e)
+
+            raise HTTPException(
+                status_code=500,
+                detail="Image upload failed"
+            )
 
 
-    # თუ მომხმარებელმა არ აირჩია კატეგორია,
-    # AI განსაზღვრავს მას
+    # AI CATEGORY
     final_category = category_id
 
     if final_category is None:
@@ -75,60 +88,91 @@ def create_report(
         )
 
 
-    # დროებით ცარიელია, სანამ თარგმნის ფუნქციას ჩავრთავთ
-    title_en = translate_text(title_ka)
-    description_en = translate_text(description_ka)
+    # TRANSLATION
+    try:
+        title_en = translate_text(title_ka)
+        description_en = translate_text(description_ka)
+
+    except Exception as e:
+        print("Translation error:", e)
+
+        # თუ თარგმანი ვერ შესრულდა
+        title_en = title_ka
+        description_en = description_ka
 
 
+
+    # CREATE REPORT
     new_report = Report(
 
-        title_ka=title_ka,
-        title_en=title_en,
+        # ძველი ველები (DB NOT NULL)
+        title=title_ka,
+        description=description_ka,
 
+
+        # ქართული
+        title_ka=title_ka,
         description_ka=description_ka,
+
+
+        # ინგლისური
+        title_en=title_en,
         description_en=description_en,
+
 
         city_id=city_id,
         category_id=final_category,
         user_id=current_user.id,
 
+
         latitude=latitude,
         longitude=longitude,
 
+
         image_url=image_url,
+
 
         status="pending"
     )
 
 
     db.add(new_report)
+
     db.commit()
+
     db.refresh(new_report)
 
 
+
     return {
+
         "message": "Report created",
 
+
         "report": {
+
             "id": new_report.id,
+
 
             "title_ka": new_report.title_ka,
             "title_en": new_report.title_en,
 
+
             "description_ka": new_report.description_ka,
             "description_en": new_report.description_en,
+
 
             "city_id": new_report.city_id,
             "category_id": new_report.category_id,
 
+
             "status": new_report.status,
 
+
             "image_url": new_report.image_url
+
         }
     }
-
-
-
 
 
 
