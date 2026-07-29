@@ -8,10 +8,16 @@ from pydantic import BaseModel, EmailStr
 from google.oauth2 import id_token
 from google.auth.transport import requests
 
+from dotenv import load_dotenv
+
 from database import SessionLocal
 from models import User
 
 from auth import create_access_token
+
+
+load_dotenv()
+
 
 
 router = APIRouter(
@@ -20,10 +26,15 @@ router = APIRouter(
 )
 
 
+
 password_hash = PasswordHash.recommended()
 
 
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+
+GOOGLE_CLIENT_ID = os.getenv(
+    "GOOGLE_CLIENT_ID"
+)
+
 
 
 # DATABASE
@@ -39,29 +50,29 @@ def get_db():
         db.close()
 
 
-
-# SCHEMAS
-
 class RegisterRequest(BaseModel):
+
     name: str
     email: EmailStr
     password: str
 
 
 
+
 class LoginRequest(BaseModel):
+
     email: EmailStr
     password: str
 
 
 
+
 class GoogleLoginRequest(BaseModel):
+
     token: str
 
 
 
-
-# REGISTER
 
 @router.post("/register")
 def register(
@@ -74,7 +85,6 @@ def register(
         .filter(User.email == data.email)
         .first()
     )
-
 
     if existing_user:
         raise HTTPException(
@@ -98,13 +108,26 @@ def register(
     new_user = User(
         name=data.name,
         email=data.email,
-        password=hashed_password
+        password=hashed_password,
+        role="user"
     )
 
 
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+    try:
+
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+
+
+    except Exception:
+
+        db.rollback()
+
+        raise HTTPException(
+            status_code=500,
+            detail="Registration failed"
+        )
 
 
     token = create_access_token(
@@ -115,15 +138,25 @@ def register(
 
 
     return {
-        "message": "Registration successful",
+
         "access_token": token,
+
         "token_type": "bearer",
+
         "user": {
+
             "id": new_user.id,
+
             "name": new_user.name,
-            "email": new_user.email
+
+            "email": new_user.email,
+
+            "role": new_user.role
+
         }
+
     }
+
 
 
 
@@ -140,14 +173,12 @@ def login(
         .first()
     )
 
-    print("EMAIL:", data.email)
-    print("USER:", user)
-
 
     if not user:
+
         raise HTTPException(
             status_code=401,
-            detail="User not found"
+            detail="Invalid email or password"
         )
 
 
@@ -157,13 +188,11 @@ def login(
     )
 
 
-    print("PASSWORD MATCH:", password_correct)
-
-
     if not password_correct:
+
         raise HTTPException(
             status_code=401,
-            detail="Wrong password"
+            detail="Invalid email or password"
         )
 
 
@@ -175,98 +204,21 @@ def login(
 
 
     return {
+
         "access_token": token,
+
         "token_type": "bearer",
+
         "user": {
+
             "id": user.id,
+
             "name": user.name,
+
             "email": user.email,
+
             "role": user.role
+
         }
-    }
 
-
-
-
-
-
-# GOOGLE LOGIN
-
-@router.post("/google")
-def google_login(
-    data: GoogleLoginRequest,
-    db: Session = Depends(get_db)
-):
-
-    try:
-
-        google_user = id_token.verify_oauth2_token(
-            data.token,
-            requests.Request(),
-            GOOGLE_CLIENT_ID
-        )
-
-
-    except ValueError:
-
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid Google token"
-        )
-
-
-
-    email = google_user.get("email")
-    name = google_user.get("name")
-
-
-    if not email:
-        raise HTTPException(
-            status_code=400,
-            detail="Google email not found"
-        )
-
-
-
-    user = (
-        db.query(User)
-        .filter(User.email == email)
-        .first()
-    )
-
-
-
-    if not user:
-
-        user = User(
-            name=name,
-            email=email,
-            password=password_hash.hash(
-                os.urandom(16).hex()
-            )
-        )
-
-
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-
-
-
-
-    token = create_access_token(
-        {
-            "user_id": user.id
-        }
-    )
-
-
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-        "user": {
-            "id": user.id,
-            "name": user.name,
-            "email": user.email
-        }
     }

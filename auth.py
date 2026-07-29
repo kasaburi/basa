@@ -1,30 +1,52 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import os
 
+from dotenv import load_dotenv
 from jose import jwt, JWTError
+
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
+
 from sqlalchemy.orm import Session
-from dotenv import load_dotenv
 
 from database import SessionLocal
 from models import User
 
 
+
+# =========================
+# ENV
+# =========================
+
 load_dotenv()
 
 
+
+# =========================
+# JWT CONFIG
+# =========================
+
 SECRET_KEY = os.getenv("SECRET_KEY")
 
+
 if not SECRET_KEY:
-    raise Exception("SECRET_KEY is missing in environment variables")
+    raise Exception(
+        "SECRET_KEY is missing in environment variables"
+    )
 
 
 ALGORITHM = "HS256"
 
+
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 
+
+
+
+# =========================
+# OAUTH2
+# =========================
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="/auth/login"
@@ -32,7 +54,11 @@ oauth2_scheme = OAuth2PasswordBearer(
 
 
 
+
+
+# =========================
 # DATABASE
+# =========================
 
 def get_db():
 
@@ -48,14 +74,16 @@ def get_db():
 
 
 
-# CREATE JWT TOKEN
+# =========================
+# CREATE TOKEN
+# =========================
 
 def create_access_token(data: dict):
 
     to_encode = data.copy()
 
 
-    expire = datetime.utcnow() + timedelta(
+    expire = datetime.now(timezone.utc) + timedelta(
         minutes=ACCESS_TOKEN_EXPIRE_MINUTES
     )
 
@@ -78,29 +106,21 @@ def create_access_token(data: dict):
 
 
 
-
+# =========================
 # CURRENT USER
-
-
+# =========================
 
 def get_current_user(
-
     token: str = Depends(oauth2_scheme),
-
     db: Session = Depends(get_db)
-
 ):
 
     try:
 
         payload = jwt.decode(
-
             token,
-
             SECRET_KEY,
-
             algorithms=[ALGORITHM]
-
         )
 
 
@@ -115,7 +135,11 @@ def get_current_user(
             )
 
 
-    except JWTError:
+        user_id = int(user_id)
+
+
+
+    except (JWTError, ValueError):
 
         raise HTTPException(
             status_code=401,
@@ -131,6 +155,7 @@ def get_current_user(
     )
 
 
+
     if user is None:
 
         raise HTTPException(
@@ -143,10 +168,14 @@ def get_current_user(
 
 
 
+
+
+# =========================
+# ADMIN CHECK
+# =========================
+
 def admin_required(
-
     current_user: User = Depends(get_current_user)
-
 ):
 
     if current_user.role != "admin":
