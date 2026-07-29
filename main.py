@@ -16,25 +16,17 @@ app = FastAPI(
 
 
 # CORS
-
 app.add_middleware(
     CORSMiddleware,
-
     allow_origins=[
-        "http://localhost:4200"
+        "http://localhost:4200",
+        "http://localhost:50873",
+        
     ],
-
     allow_credentials=True,
-
-    allow_methods=[
-        "*"
-    ],
-
-    allow_headers=[
-        "*"
-    ],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-
 
 
 # ROUTERS
