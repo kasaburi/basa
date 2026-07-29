@@ -7,7 +7,7 @@ from pydantic import BaseModel, EmailStr
 
 from google.oauth2 import id_token
 from google.auth.transport import requests
-
+from sqlalchemy import func
 from dotenv import load_dotenv
 
 from database import SessionLocal
@@ -160,32 +160,42 @@ def register(
 
 
 
-
 @router.post("/login")
 def login(
     data: LoginRequest,
     db: Session = Depends(get_db)
 ):
 
+    email = data.email.strip().lower()
+
+
     user = (
         db.query(User)
-        .filter(User.email == data.email)
+        .filter(
+            func.lower(User.email) == email
+        )
         .first()
     )
 
 
     if not user:
-
         raise HTTPException(
             status_code=401,
             detail="Invalid email or password"
         )
 
 
-    password_correct = password_hash.verify(
-        data.password,
-        user.password
-    )
+    try:
+
+        password_correct = password_hash.verify(
+            data.password,
+            user.password
+        )
+
+    except Exception:
+
+        password_correct = False
+
 
 
     if not password_correct:
@@ -194,6 +204,7 @@ def login(
             status_code=401,
             detail="Invalid email or password"
         )
+
 
 
     token = create_access_token(
@@ -221,4 +232,5 @@ def login(
 
         }
 
+    
     }
