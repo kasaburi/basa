@@ -21,14 +21,12 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:4200",
         "http://localhost:50873",
-        
+        "https://შენი-frontend.onrender.com"
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
 # ROUTERS
 
 app.include_router(
