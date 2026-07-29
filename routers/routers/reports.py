@@ -4,14 +4,17 @@ from typing import Optional
 from sqlalchemy import or_
 from database import SessionLocal
 from models import Report, Category, ReportStatusHistory, User
-import os
-from cloudinary_config import cloudinary
+import cloudinary_config
 import cloudinary.uploader
+
+
+
+
 from auth import get_current_user, admin_required
 from ai_service import suggest_category
 from auth import get_current_user, admin_required
 from services.translator import translate_text
-
+import os
 
 
 router = APIRouter(
@@ -232,9 +235,9 @@ def solve_report(
 def update_status(
     report_id: int,
     status: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    admin: User = Depends(admin_required)
 ):
-
     report = (
         db.query(Report)
         .filter(Report.id == report_id)
