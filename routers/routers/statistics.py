@@ -6,10 +6,6 @@ from database import get_db
 from models import Report, Category, City
 
 
-
-
-
-
 router = APIRouter(
     prefix="/statistics",
     tags=["Statistics"]
@@ -47,22 +43,25 @@ def get_summary(db: Session = Depends(get_db)):
         )
     }
 
+
+
 # კატეგორიების სტატისტიკა
 @router.get("/categories")
 def get_categories(db: Session = Depends(get_db)):
 
     result = (
         db.query(
-            Category.name,
+            Category.name_ka,
             func.count(Report.id)
         )
         .join(
             Report,
             Report.category_id == Category.id
         )
-        .group_by(Category.name)
+        .group_by(Category.name_ka)
         .all()
     )
+
 
     return [
         {
@@ -73,22 +72,25 @@ def get_categories(db: Session = Depends(get_db)):
     ]
 
 
+
+
 # ქალაქების სტატისტიკა
 @router.get("/cities")
 def get_cities(db: Session = Depends(get_db)):
 
     result = (
         db.query(
-            City.name,
+            City.name_ka,
             func.count(Report.id)
         )
         .join(
             Report,
             Report.city_id == City.id
         )
-        .group_by(City.name)
+        .group_by(City.name_ka)
         .all()
     )
+
 
     return [
         {
