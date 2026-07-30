@@ -13,11 +13,18 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL is not set")
 
+print("DATABASE EXISTS:", bool(DATABASE_URL))
+
+before_at = DATABASE_URL.split("@")[0]
+after_at = DATABASE_URL.split("@")[1]
+
+print("DB BEFORE @:")
+print(before_at[:60])
 
 print("DB HOST:")
-print(DATABASE_URL.split("@")[-1])
-print("DB USER:")
-print(DATABASE_URL.split("://")[1].split(":")[0])
+print(after_at)
+
+
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL is not set")
 
