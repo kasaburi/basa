@@ -44,7 +44,17 @@ def get_db():
     db = SessionLocal()
 
     try:
+
+        print("DATABASE SESSION OPEN")
+
         yield db
 
+    except Exception as e:
+
+        print("DATABASE ERROR:", e)
+        raise
+
     finally:
+
+        print("DATABASE SESSION CLOSE")
         db.close()
