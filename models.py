@@ -79,11 +79,9 @@ class User(Base):
 # =========================
 # CITIES
 # =========================
-
 class City(Base):
 
     __tablename__ = "cities"
-
 
     id = Column(
         Integer,
@@ -91,22 +89,20 @@ class City(Base):
         index=True
     )
 
-
-    name = Column(
+    name_ka = Column(
         String,
-        unique=True,
         nullable=False
     )
 
+    name_en = Column(
+        String,
+        nullable=True
+    )
 
     reports = relationship(
         "Report",
         back_populates="city"
     )
-
-
-
-
 
 # =========================
 # CATEGORIES
@@ -116,30 +112,27 @@ class Category(Base):
 
     __tablename__ = "categories"
 
-
     id = Column(
         Integer,
         primary_key=True,
         index=True
     )
 
-
-    name = Column(
+    name_ka = Column(
         String,
         unique=True,
         nullable=False
     )
 
+    name_en = Column(
+        String,
+        nullable=True
+    )
 
     reports = relationship(
         "Report",
         back_populates="category"
     )
-
-
-
-
-
 # =========================
 # REPORTS
 # =========================

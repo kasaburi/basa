@@ -338,7 +338,6 @@ def update_status(
 # =========================
 # STATISTICS
 # =========================
-
 @router.get("/stats/overview")
 def stats_overview(
 
@@ -346,15 +345,14 @@ def stats_overview(
 
 ):
 
-
-    base = db.query(Report).filter(
-        Report.is_deleted == False
-    )
+    # ყველა report ითვლება სტატისტიკაში
+    base = db.query(Report)
 
 
     return {
 
         "total": base.count(),
+
 
         "pending":
             base.filter(
@@ -378,9 +376,6 @@ def stats_overview(
 
 
 
-
-
-
 @router.get("/stats/by-category")
 def stats_by_category(
 
@@ -388,9 +383,7 @@ def stats_by_category(
 
 ):
 
-
     categories = db.query(Category).all()
-
 
 
     return [
@@ -403,8 +396,7 @@ def stats_by_category(
             "total":
                 db.query(Report)
                 .filter(
-                    Report.category_id == category.id,
-                    Report.is_deleted == False
+                    Report.category_id == category.id
                 )
                 .count()
 
@@ -413,7 +405,6 @@ def stats_by_category(
         for category in categories
 
     ]
-
 
 
 
@@ -455,7 +446,7 @@ def delete_report(
 
 
     report.is_deleted = True
-
+    report.deleted_by = admin.id
 
     db.commit()
 

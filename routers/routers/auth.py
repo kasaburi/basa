@@ -73,7 +73,6 @@ class GoogleLoginRequest(BaseModel):
 
 
 
-
 @router.post("/register")
 def register(
     data: RegisterRequest,
@@ -132,7 +131,8 @@ def register(
 
     token = create_access_token(
         {
-            "user_id": new_user.id
+            "user_id": new_user.id,
+            "role": new_user.role
         }
     )
 
@@ -156,8 +156,6 @@ def register(
         }
 
     }
-
-
 
 
 @router.post("/login")
@@ -206,10 +204,10 @@ def login(
         )
 
 
-
     token = create_access_token(
         {
-            "user_id": user.id
+            "user_id": user.id,
+            "role": user.role
         }
     )
 
@@ -232,5 +230,6 @@ def login(
 
         }
 
+    
     
     }

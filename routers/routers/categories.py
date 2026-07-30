@@ -18,22 +18,30 @@ def get_db():
 
 
 # CREATE CATEGORY
+# CREATE CATEGORY
 @router.post("/", response_model=CategoryResponse)
 def create_category(category: CategoryCreate, db: Session = Depends(get_db)):
 
-    # optional: duplicate check (ძალიან მნიშვნელოვანია რეალურ პროექტში)
-    existing = db.query(Category).filter(Category.name == category.name).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Category already exists")
+    existing = db.query(Category).filter(
+        Category.name_ka == category.name_ka
+    ).first()
 
-    new_category = Category(name=category.name)
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail="Category already exists"
+        )
+
+    new_category = Category(
+        name_ka=category.name_ka,
+        name_en=category.name_en
+    )
 
     db.add(new_category)
     db.commit()
     db.refresh(new_category)
 
     return new_category
-
 
 # GET ALL CATEGORIES
 @router.get("/", response_model=list[CategoryResponse])

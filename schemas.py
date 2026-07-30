@@ -32,19 +32,18 @@ class CategoryResponse(BaseModel):
 # =========================
 
 class CityCreate(BaseModel):
-
-    name: str
-
+    name_ka: str
+    name_en: str | None = None
 
 
 class CityResponse(BaseModel):
-
     id: int
-    name: str
-
+    name_ka: str
+    name_en: str | None = None
 
     class Config:
         from_attributes = True
+
 
 
 

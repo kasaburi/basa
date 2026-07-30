@@ -16,7 +16,6 @@ def get_db():
     finally:
         db.close()
 
-
 # GET ALL CITIES
 @router.get("/", response_model=list[CityResponse])
 def get_cities(db: Session = Depends(get_db)):
@@ -27,12 +26,20 @@ def get_cities(db: Session = Depends(get_db)):
 @router.post("/", response_model=CityResponse)
 def create_city(city: CityCreate, db: Session = Depends(get_db)):
 
-    # ❗ duplicate check (ძალიან მნიშვნელოვანია რეალურ პროექტში)
-    existing_city = db.query(City).filter(City.name == city.name).first()
-    if existing_city:
-        raise HTTPException(status_code=400, detail="City already exists")
+    existing_city = db.query(City).filter(
+        City.name_ka == city.name_ka
+    ).first()
 
-    new_city = City(name=city.name)
+    if existing_city:
+        raise HTTPException(
+            status_code=400,
+            detail="City already exists"
+        )
+
+    new_city = City(
+        name_ka=city.name_ka,
+        name_en=city.name_en
+    )
 
     db.add(new_city)
     db.commit()
