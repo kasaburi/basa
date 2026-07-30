@@ -8,8 +8,16 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 load_dotenv()
 
 
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+print(
+    "DB:",
+    DATABASE_URL.replace(
+        DATABASE_URL.split(":")[2].split("@")[0],
+        "***"
+    )
+)
 
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL is not set")
