@@ -8,23 +8,25 @@ from datetime import datetime
 # CATEGORY
 # =========================
 
+
+
+
 class CategoryCreate(BaseModel):
 
-    name: str
+    name_ka: str
+    name_en: str | None = None
 
 
 
 class CategoryResponse(BaseModel):
 
     id: int
-    name: str
+    name_ka: str
+    name_en: str | None = None
 
 
     class Config:
         from_attributes = True
-
-
-
 
 
 # =========================
