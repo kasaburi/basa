@@ -15,19 +15,18 @@ app = FastAPI(
 
 
 
-# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:4200",
         "http://localhost:50873",
+        "http://localhost:55397",
         "https://შენი-frontend.onrender.com"
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# ROUTERS
 
 app.include_router(
     statistics.router
