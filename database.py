@@ -9,6 +9,12 @@ load_dotenv()
 # get DATABASE_URL from environment (Render or local)
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+print(
+    DATABASE_URL
+        .replace("kasaburi2001", "***")
+)
+
+
 # safety check
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL is not set")
