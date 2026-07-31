@@ -18,6 +18,7 @@ print("DATABASE EXISTS:", bool(DATABASE_URL))
 before_at = DATABASE_URL.split("@")[0]
 after_at = DATABASE_URL.split("@")[1]
 
+
 print("DB BEFORE @:")
 print(before_at[:60])
 
